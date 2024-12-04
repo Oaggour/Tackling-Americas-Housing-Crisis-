@@ -29,3 +29,14 @@ def create_table(cur, conn):
         )
     """)
     conn.commit()
+
+
+def get_last_index(conn):
+    cur = conn.execute("SELECT MAX(id) FROM census_data;") 
+    result = cur.fetchone()
+    if result and result[0]:
+        return result[0]
+    else:
+        return 0
+
+
