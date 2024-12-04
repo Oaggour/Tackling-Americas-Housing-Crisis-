@@ -40,3 +40,28 @@ def get_last_index(conn):
         return 0
 
 
+def insert_data(cur, conn, data, start_index):
+    sql = """
+        INSERT INTO census_data (
+            county_name,
+            population,
+            median_income,
+            owner_occupied,
+            renter_occupied,
+            commute_time,
+            fips_code
+        ) VALUES (?,?,?,?,?,?,?); 
+    """
+    if start_index > 99:
+        batch_size = 377
+    
+    end_index = start_index + batch_size
+    batch_data = data[start_index:end_index]
+
+    counter = 0
+    for row in batch_data:
+        conn.execute(sql, row)
+        print(f'Row {counter} successfully inserted.')
+        counter += 1
+    conn.commit()
+
