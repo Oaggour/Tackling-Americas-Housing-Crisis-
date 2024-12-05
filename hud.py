@@ -15,7 +15,7 @@ def fetch_data(last_index):
     if last_index > 99:
         BATCH_SIZE = 1000
     end_index = last_index + BATCH_SIZE
-    data = []
+    batch = []
     url = "https://www.huduser.gov/hudapi/public/fmr/listStates"
     headers = {"Authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiI2IiwianRpIjoiOGM1M2QwNTljMzhjODdjNjljMzM0OWM1M2RlN2MwM2Q0NTNjODYzYTRjMTFiMzllOGRiODE5ZDBjZTg2YjA0YWFlNjE3YTlkNWZlYzQ1NjEiLCJpYXQiOjE3MzMxNzUwOTkuOTUxNzkyLCJuYmYiOjE3MzMxNzUwOTkuOTUxNzk0LCJleHAiOjIwNDg3MDc4OTkuOTQ2MjUyLCJzdWIiOiI4MzIyMiIsInNjb3BlcyI6W119.C1ut5kUQY5UpLuui3yiHQwxroyYeQvsLt5_JHY0tLN-sK2FvbxrMoFhqkga7YMurnObI3sb3vlkQsLY8ONZxOA"}  
     response = requests.get(url, headers=headers)
@@ -23,19 +23,34 @@ def fetch_data(last_index):
     if response.status_code == 200:
         states = response.json()
     for state in states:
-        if len(data) > end_index:
+        if len(batch) > end_index:
             break
         state_code = state["state_code"]
-        print(state_code)
         url = f"https://www.huduser.gov/hudapi/public/fmr/statedata/{state_code}"
         headers = {"Authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiI2IiwianRpIjoiOGM1M2QwNTljMzhjODdjNjljMzM0OWM1M2RlN2MwM2Q0NTNjODYzYTRjMTFiMzllOGRiODE5ZDBjZTg2YjA0YWFlNjE3YTlkNWZlYzQ1NjEiLCJpYXQiOjE3MzMxNzUwOTkuOTUxNzkyLCJuYmYiOjE3MzMxNzUwOTkuOTUxNzk0LCJleHAiOjIwNDg3MDc4OTkuOTQ2MjUyLCJzdWIiOiI4MzIyMiIsInNjb3BlcyI6W119.C1ut5kUQY5UpLuui3yiHQwxroyYeQvsLt5_JHY0tLN-sK2FvbxrMoFhqkga7YMurnObI3sb3vlkQsLY8ONZxOA"}  
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
-            data += response.json()["data"]["counties"]
+            rows = response.json()["data"]["counties"]
+            for row in rows:
+                batch.append((
+                    row['town_name'],
+                    row['county_name'],
+                    row['metro_name'],
+                    int(row['fips_code']) if row['fips_code'] != None else None,
+                    int(row['Efficiency']) if row['Efficiency'] != None else None,
+                    int(row['One-Bedroom']) if row['One-Bedroom'] != None else None,
+                    int(row['Two-Bedroom']) if row['Two-Bedroom'] != None else None,
+                    int(row['Three-Bedroom']) if row['Three-Bedroom'] != None else None,
+                    int(row['Four-Bedroom']) if row['Four-Bedroom'] != None else None,
+                    int(row['FMR Percentile']) if row['FMR Percentile'] != None else None,
+                    row['statename'],
+                    row['statecode'],
+                    int(row['smallarea_status']) if row['smallarea_status'] != None else None
+                ))
         else:
             print(f"Failed to fetch data: {response.status_code}")
 
-    return data
+    return batch
 
 def create_table(conn):
     """
@@ -44,7 +59,7 @@ def create_table(conn):
         conn: SQLite connection object.
     """
     create_table_sql = f"""
-    CREATE TABLE IF NOT EXISTS RentData (
+    CREATE TABLE IF NOT EXISTS hud_data (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         town_name TEXT,
         county_name TEXT,
@@ -58,7 +73,7 @@ def create_table(conn):
         FMR_Percentile INTEGER,
         statename TEXT,
         statecode TEXT,
-        smallarea_status TEXT
+        smallarea_status INTEGER
     );
     """
     conn.execute(create_table_sql)
@@ -96,9 +111,8 @@ def insert_data(conn, rows, start_index):
     
     end_index = start_index + BATCH_SIZE
     batch_data = rows[start_index:end_index]
-    print(batch_data)
     insert_sql = f"""
-    INSERT INTO RentData (
+    INSERT INTO hud_data (
         town_name,
         county_name,
         metro_name,
@@ -115,7 +129,6 @@ def insert_data(conn, rows, start_index):
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
     """
     for row in batch_data:
-        print(row)
         conn.execute(insert_sql, row)
     conn.commit()
     print(f"Inserted rows {start_index + 1} to {end_index}")
