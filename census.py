@@ -65,3 +65,27 @@ def insert_data(cur, conn, data, start_index):
         counter += 1
     conn.commit()
 
+def process_api_data(year):
+    response = requests.get(api_url(variables, year))
+    if response.status_code == 200:
+        data = response.json()
+        headers = data[0]
+        rows = data[1:]
+        batch = []
+        counter = 0
+        for row in rows:
+            fips = row[6] + row[7]
+            batch.append((
+                row[0],
+                int(row[1]) if row[1] != None else None,
+                int(row[2]) if row[2] != None else None,
+                int(row[3]) if row[3] != None else None,
+                int(row[4]) if row[4] != None else None, 
+                int(row[5]) if row[5] != None else None,
+                fips
+            ))
+        
+        return batch
+    else:
+        return 'Error.'
+
