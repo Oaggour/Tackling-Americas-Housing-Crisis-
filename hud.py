@@ -31,22 +31,23 @@ def fetch_data(last_index):
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
             rows = response.json()["data"]["counties"]
-            for row in rows:
-                batch.append((
-                    row['town_name'],
-                    row['county_name'],
-                    row['metro_name'],
-                    int(row['fips_code']) if row['fips_code'] != None else None,
-                    int(row['Efficiency']) if row['Efficiency'] != None else None,
-                    int(row['One-Bedroom']) if row['One-Bedroom'] != None else None,
-                    int(row['Two-Bedroom']) if row['Two-Bedroom'] != None else None,
-                    int(row['Three-Bedroom']) if row['Three-Bedroom'] != None else None,
-                    int(row['Four-Bedroom']) if row['Four-Bedroom'] != None else None,
-                    int(row['FMR Percentile']) if row['FMR Percentile'] != None else None,
-                    row['statename'],
-                    row['statecode'],
-                    int(row['smallarea_status']) if row['smallarea_status'] != None else None
-                ))
+            if rows[0]["fips_code"][-5:] == "99999" and rows[-1]["fips_code"][-5:] == "99999":
+                for row in rows:
+                        batch.append((
+                            row['town_name'],
+                            row['county_name'],
+                            row['metro_name'],
+                            row['fips_code'][:5],
+                            int(row['Efficiency']) if row['Efficiency'] != None else None,
+                            int(row['One-Bedroom']) if row['One-Bedroom'] != None else None,
+                            int(row['Two-Bedroom']) if row['Two-Bedroom'] != None else None,
+                            int(row['Three-Bedroom']) if row['Three-Bedroom'] != None else None,
+                            int(row['Four-Bedroom']) if row['Four-Bedroom'] != None else None,
+                            int(row['FMR Percentile']) if row['FMR Percentile'] != None else None,
+                            row['statename'],
+                            row['statecode'],
+                            int(row['smallarea_status']) if row['smallarea_status'] != None else None
+                        ))
         else:
             print(f"Failed to fetch data: {response.status_code}")
 
