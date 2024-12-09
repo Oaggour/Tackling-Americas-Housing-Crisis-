@@ -64,3 +64,82 @@ def get_last_index(conn):
         return result[0]
     else:
         return 0
+
+def insert_data(conn, rows, start_index):
+    """
+    Inserts data in batches into the database.
+    Args:
+        conn: SQLite connection object.
+        rows: List of tuples (county_fips, covid_hospital_admissions_per_100k, covid_19_community_level).
+        start_index: The starting index for insertion.
+    """
+    if start_index > 99:
+        BATCH_SIZE = 1000
+    
+    end_index = start_index + BATCH_SIZE
+    batch_data = rows[start_index:end_index]
+    insert_sql = f"""
+    INSERT INTO {TABLE_NAME} (
+        county_fips,
+        covid_hospital_admissions_per_100k,
+        covid_19_community_level
+    ) VALUES (?,?,?);
+    """
+    for row in batch_data:
+        conn.execute(insert_sql, row)
+    conn.commit()
+    print(f"Inserted rows {start_index + 1} to {end_index}")
+
+
+def progressively_load_data(conn):
+    rows = fetch_data()
+    
+    if not rows:
+        print("No data fetched.")
+        return
+
+    # Create table if it doesn't exist
+    create_table(conn)
+    
+    # Get last index inserted in the database
+    last_index = get_last_index(conn)
+    
+    # Insert data in chunks of BATCH_SIZE
+    insert_data(conn, rows, last_index)
+    
+    # Close the database connection
+    conn.close()
+
+
+
+
+class Testing(unittest.TestCase):
+    def setUp(self):
+        self.conn = sqlite3.connect(DB_NAME)
+    
+    def tearDown(self):
+        self.conn.close()
+    
+    def test_database_values(self):
+        query = "SELECT * FROM er_data WHERE county_fips = ?"
+        cursor = self.conn.execute(query,('05021',))
+        result = cursor.fetchone()
+        self.assertEqual(result[2], 1.9)
+
+        cursor = self.conn.execute(query, ('27121',))
+        result = cursor.fetchone()
+        self.assertEqual(result[2],1.7)
+        self.assertEqual(result[3],'Low')
+
+        
+
+def main():
+    conn = sqlite3.connect(DB_NAME)
+    
+    
+    
+
+if __name__ == "__main__":
+    main()
+    unittest.main()
+
