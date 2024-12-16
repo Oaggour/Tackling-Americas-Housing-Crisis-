@@ -3,57 +3,45 @@ import sqlite3
 # Database connection
 conn = sqlite3.connect("housing.db")
 
-# Query to retrieve data from the combined table
+# SQL query with JOIN for COVID-19 levels and aggregated metrics
 query = """
 SELECT 
-    two_bedroom AS average_rent,
-    median_income,
-    covid_19_community_level_id
+    covid_community_level.covid_19_community_level,
+    AVG(combined_data.two_bedroom) AS average_rent,
+    AVG(combined_data.median_income) AS average_income,
+    AVG(combined_data.covid_hospital_admissions_per_100k) AS average_hospital_admissions
 FROM 
     combined_data
+JOIN 
+    covid_community_level 
+ON 
+    combined_data.covid_19_community_level_id = covid_community_level.id
 WHERE 
-    two_bedroom IS NOT NULL 
-    AND median_income IS NOT NULL 
-    AND covid_19_community_level_id IS NOT NULL;
+    combined_data.two_bedroom IS NOT NULL 
+    AND combined_data.median_income IS NOT NULL 
+    AND combined_data.covid_hospital_admissions_per_100k IS NOT NULL
+GROUP BY 
+    covid_community_level.covid_19_community_level
+ORDER BY 
+    covid_community_level.id;
 """
 
-# Execute the query and fetch all rows
+# Execute the query and fetch results
 cursor = conn.cursor()
 cursor.execute(query)
 rows = cursor.fetchall()
 
-# Map COVID-19 community level IDs to their labels
-covid_levels = {1: "Low", 2: "Medium", 3: "High"}
-
-# Organize data into a dictionary for grouping
-rent_by_covid_level = {}
-for row in rows:
-    average_rent, median_income, covid_level_id = row
-    covid_level = covid_levels.get(covid_level_id, "Unknown")
-    if covid_level not in rent_by_covid_level:
-        rent_by_covid_level[covid_level] = {"total_rent": 0, "count": 0}
-    rent_by_covid_level[covid_level]["total_rent"] += average_rent
-    rent_by_covid_level[covid_level]["count"] += 1
-
-# Calculate the averages
-average_rent_by_covid = {
-    covid_level: data["total_rent"] / data["count"]
-    for covid_level, data in rent_by_covid_level.items()
-}
-
-# Order the levels explicitly (Low, Medium, High)
-ordered_levels = ["Low", "Medium", "High"]
+# Close the connection
+conn.close()
 
 # Write results to a text file
 output_file = "calculated_data.txt"
 with open(output_file, "w") as f:
-    f.write("Average Rental Cost by COVID-19 Community Level:\n")
-    for covid_level in ordered_levels:
-        if covid_level in average_rent_by_covid:
-            avg_rent = average_rent_by_covid[covid_level]
-            f.write(f"{covid_level}: {avg_rent:.2f}\n")
+    f.write("Metrics by COVID-19 Community Level:\n")
+    f.write("COVID Level | Average Rent | Average Income | Average Hospital Admissions\n")
+    f.write("-" * 65 + "\n")
+    for row in rows:
+        covid_level, avg_rent, avg_income, avg_hospital_admissions = row
+        f.write(f"{covid_level:12} | ${avg_rent:.2f}       | ${avg_income:.2f}       | {avg_hospital_admissions:.2f} per 100k\n")
 
-print(f"Calculated data written to {output_file}")
-
-# Close the connection
-conn.close()
+print(f"Calculated data written to {output_file}.")
