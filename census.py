@@ -19,39 +19,25 @@ def api_url(year, variables):
 
 def create_table(cur, conn):
     cur.execute(f""" 
-        CREATE TABLE IF NOT EXISTS census_data (
+        CREATE TABLE IF NOT EXISTS combined_data (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            population INTEGER,
-            median_income INTEGER, 
-            owner_occupied INTEGER,
-            renter_occupied INTEGER,
-            commute_time INTEGER, 
-            fips_code TEXT
-        )
+            fips_code TEXT UNIQUE,
+            covid_hospital_admissions_per_100k REAL,
+            covid_19_community_level_id INTEGER,
+            median_income INTEGER,
+            two_bedroom INTEGER
+        );
     """)
     conn.commit()
 
 
 def get_last_index(conn):
-    cur = conn.execute("SELECT MAX(id) FROM census_data;") 
-    result = cur.fetchone()
-    if result and result[0]:
-        return result[0]
-    else:
-        return 0
+    cursor = conn.execute("SELECT COUNT(*) FROM combined_data WHERE covid_hospital_admissions_per_100k IS NOT NULL;")
+    return cursor.fetchone()[0]
 
 
 def insert_data(cur, conn, data, start_index):
-    sql = """
-        INSERT INTO census_data (
-            population,
-            median_income,
-            owner_occupied,
-            renter_occupied,
-            commute_time,
-            fips_code
-        ) VALUES (?,?,?,?,?,?); 
-    """
+    
     batch_size = 25
 
     if start_index > 99:
@@ -62,7 +48,12 @@ def insert_data(cur, conn, data, start_index):
 
     counter = start_index
     for row in batch_data:
-        conn.execute(sql, row)
+        conn.execute("""
+        INSERT INTO combined_data (fips_code, median_income)
+        VALUES (?, ?)
+        ON CONFLICT(fips_code) DO UPDATE SET
+            median_income=excluded.median_income;
+        """, row)
         print(f'Row {counter} successfully inserted.')
         counter += 1
     conn.commit()
@@ -78,11 +69,7 @@ def process_api_data(year):
         for row in rows:
             fips = row[6] + row[7]
             batch.append((
-                int(row[1]) if row[1] != None else None,
                 int(row[2]) if row[2] != None else None,
-                int(row[3]) if row[3] != None else None,
-                int(row[4]) if row[4] != None else None, 
-                int(row[5]) if row[5] != None else None,
                 fips
             ))
         

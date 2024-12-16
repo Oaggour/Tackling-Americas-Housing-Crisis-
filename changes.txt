@@ -1,0 +1,2 @@
+1. We added the unique identifier to our covid_community_level so that there are no string duplicates
+2. We changed the table structure in all our api files to input to the same table

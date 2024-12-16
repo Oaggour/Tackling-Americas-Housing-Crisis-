@@ -45,11 +45,13 @@ def create_tables(conn):
         conn: SQLite connection object.
     """
     create_table_sql = f"""
-    CREATE TABLE IF NOT EXISTS {TABLE_NAME} (
+    CREATE TABLE IF NOT EXISTS combined_data (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        county_fips TEXT,
+        fips_code TEXT UNIQUE,
         covid_hospital_admissions_per_100k REAL,
-        covid_19_community_level_id INTEGER
+        covid_19_community_level_id INTEGER,
+        median_income INTEGER,
+        two_bedroom INTEGER
     );
     """
     create_table_2 = """
@@ -73,21 +75,8 @@ def create_tables(conn):
     conn.commit()
 
 def get_last_index(conn):
-    """
-    Gets the last index inserted in the database.
-    Args:
-        conn: SQLite connection object.
-    Returns:
-        int: Last index inserted in the database.
-    """
-    query_sql = f"SELECT MAX(id) FROM {TABLE_NAME};"
-    cursor = conn.execute(query_sql)
-    result = cursor.fetchone()
-    
-    if result and result[0]:
-        return result[0]
-    else:
-        return 0
+    cursor = conn.execute("SELECT COUNT(*) FROM combined_data WHERE covid_hospital_admissions_per_100k IS NOT NULL;")
+    return cursor.fetchone()[0]
 
 def insert_data(conn, rows, start_index):
     """
@@ -103,15 +92,15 @@ def insert_data(conn, rows, start_index):
     
     end_index = start_index + batch_size
     batch_data = rows[start_index:end_index]
-    insert_sql = f"""
-    INSERT OR IGNORE INTO {TABLE_NAME} (
-        county_fips,
-        covid_hospital_admissions_per_100k,
-        covid_19_community_level_id
-    ) VALUES (?,?,?);
-    """
     for row in batch_data:
-        conn.execute(insert_sql, row)
+        conn.execute("""
+        INSERT INTO combined_data (fips_code, covid_hospital_admissions_per_100k, covid_19_community_level_id)
+        VALUES (?, ?, ?)
+        ON CONFLICT(fips_code) DO UPDATE SET
+            covid_hospital_admissions_per_100k=excluded.covid_hospital_admissions_per_100k,
+            covid_19_community_level_id=excluded.covid_19_community_level_id;
+        """, row)
+
     conn.commit()
     print(f"Inserted rows {start_index + 1} to {end_index}")
 

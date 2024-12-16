@@ -35,13 +35,7 @@ def fetch_data(last_index):
                 for row in rows:
                         batch.append((
                             row['fips_code'][:5],
-                            int(row['Efficiency']) if row['Efficiency'] != None else None,
-                            int(row['One-Bedroom']) if row['One-Bedroom'] != None else None,
                             int(row['Two-Bedroom']) if row['Two-Bedroom'] != None else None,
-                            int(row['Three-Bedroom']) if row['Three-Bedroom'] != None else None,
-                            int(row['Four-Bedroom']) if row['Four-Bedroom'] != None else None,
-                            int(row['FMR Percentile']) if row['FMR Percentile'] != None else None,
-                            int(row['smallarea_status']) if row['smallarea_status'] != None else None
                         ))
         else:
             print(f"Failed to fetch data: {response.status_code}")
@@ -55,37 +49,22 @@ def create_table(conn):
         conn: SQLite connection object.
     """
     create_table_sql = f"""
-    CREATE TABLE IF NOT EXISTS hud_data (
+    CREATE TABLE IF NOT EXISTS combined_data (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         fips_code TEXT UNIQUE,
-        Efficiency INTEGER,
-        One_Bedroom INTEGER,
-        Two_Bedroom INTEGER,
-        Three_Bedroom INTEGER,
-        Four_Bedroom INTEGER,
-        FMR_Percentile INTEGER,
-        smallarea_status INTEGER
+        covid_hospital_admissions_per_100k REAL,
+        covid_19_community_level_id INTEGER,
+        median_income INTEGER,
+        two_bedroom INTEGER
     );
     """
     conn.execute(create_table_sql)
     conn.commit()
 
 def get_last_index(conn):
-    """
-    Gets the last index inserted in the database.
-    Args:
-        conn: SQLite connection object.
-    Returns:
-        int: Last index inserted in the database.
-    """
-    query_sql = f"SELECT MAX(id) FROM {TABLE_NAME};"
-    cursor = conn.execute(query_sql)
-    result = cursor.fetchone()
-    
-    if result and result[0]:
-        return result[0]
-    else:
-        return 0
+    cursor = conn.execute("SELECT COUNT(*) FROM combined_data WHERE covid_hospital_admissions_per_100k IS NOT NULL;")
+    return cursor.fetchone()[0]
+
     
 
 def insert_data(conn, rows, start_index):
@@ -102,20 +81,14 @@ def insert_data(conn, rows, start_index):
     
     end_index = start_index + BATCH_SIZE
     batch_data = rows[start_index:end_index]
-    insert_sql = f"""
-    INSERT INTO hud_data (
-        fips_code,
-        Efficiency,
-        One_Bedroom,
-        Two_Bedroom,
-        Three_Bedroom,
-        Four_Bedroom,
-        FMR_Percentile,
-        smallarea_status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?);
-    """
     for row in batch_data:
-        conn.execute(insert_sql, row)
+        conn.execute("""
+        INSERT INTO combined_data (fips_code, two_bedroom)
+        VALUES (?, ?)
+        ON CONFLICT(fips_code) DO UPDATE SET
+            two_bedroom=excluded.two_bedroom;
+        """, row)
+
     conn.commit()
     print(f"Inserted rows {start_index + 1} to {end_index}")
 
@@ -127,43 +100,18 @@ def progressively_load_data(conn):
     # Get last index inserted in the database
     last_index = get_last_index(conn)
 
-
     rows = fetch_data(last_index)
     
     if not rows:
         print("No data fetched.")
         return
 
-   
-    
     # Insert data in chunks of BATCH_SIZE
     insert_data(conn, rows, last_index)
     
     # Close the database connection
     conn.close()
 
-
-
-
-class Testing(unittest.TestCase):
-    def setUp(self):
-        self.conn = sqlite3.connect(DB_NAME)
-    
-    def tearDown(self):
-        self.conn.close()
-    
-    def test_database_values(self):
-        query = "SELECT * FROM er_data WHERE county_fips = ?"
-        cursor = self.conn.execute(query,('05021',))
-        result = cursor.fetchone()
-        self.assertEqual(result[2], 1.9)
-
-        cursor = self.conn.execute(query, ('27121',))
-        result = cursor.fetchone()
-        self.assertEqual(result[2],1.7)
-        self.assertEqual(result[3],'Low')
-
-        
 
 def main():
     conn = sqlite3.connect(DB_NAME)
