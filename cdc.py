@@ -55,7 +55,7 @@ def create_tables(conn):
     create_table_2 = """
         CREATE TABLE IF NOT EXISTS covid_community_level (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            covid_19_community_level TEXT
+            covid_19_community_level TEXT UNIQUE
         )
     """
     insert_table_2 = """
@@ -165,5 +165,5 @@ def main():
 
 if __name__ == "__main__":
     main()
-    unittest.main()
+    # unittest.main()
 
