@@ -22,16 +22,23 @@ def fetch_data():
         # Extract relevant columns
         extracted_data = [] 
         for row in rows:
-
+            covid_19_community_level_id = 0
             if row[19] == '2023-05-11T00:00:00':
-                extracted_data.append((row[9], row[16], row[18]))
-            
+                if row[18] == 'Low':
+                    covid_19_community_level_id = 1
+                elif row[18] == 'Medium':
+                    covid_19_community_level_id = 2
+                elif row[18] == 'High':
+                    covid_19_community_level_id = 3
+
+                extracted_data.append((row[9], row[16], covid_19_community_level_id))
+    
         return extracted_data
     else:
         print(f"Failed to fetch data: {response.status_code}")
         return []
 
-def create_table(conn):
+def create_tables(conn):
     """
     Creates the `er_data` table if it doesn't exist.
     Args:
@@ -42,10 +49,27 @@ def create_table(conn):
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         county_fips TEXT,
         covid_hospital_admissions_per_100k REAL,
-        covid_19_community_level TEXT
+        covid_19_community_level_id TEXT
     );
     """
+    create_table_2 = """
+        CREATE TABLE IF NOT EXISTS covid_community_level (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            covid_19_community_level TEXT
+        )
+    """
+    insert_table_2 = """
+        INSERT INTO covid_community_level (
+            covid_19_community_level
+        )
+        VALUES
+        ('Low'),
+        ('Medium'),
+        ('High');
+    """
     conn.execute(create_table_sql)
+    conn.execute(create_table_2)
+    conn.execute(insert_table_2)
     conn.commit()
 
 def get_last_index(conn):
@@ -99,7 +123,7 @@ def progressively_load_data(conn):
         return
 
     # Create table if it doesn't exist
-    create_table(conn)
+    create_tables(conn)
     
     # Get last index inserted in the database
     last_index = get_last_index(conn)
@@ -110,8 +134,6 @@ def progressively_load_data(conn):
     # Close the database connection
     conn.close()
 
-
-# test change
 
 class Testing(unittest.TestCase):
     def setUp(self):
@@ -135,6 +157,7 @@ class Testing(unittest.TestCase):
 
 def main():
     conn = sqlite3.connect(DB_NAME)
+    progressively_load_data(conn)
     
     
     
