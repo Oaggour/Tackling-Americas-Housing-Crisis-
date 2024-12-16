@@ -34,9 +34,6 @@ def fetch_data(last_index):
             if rows[0]["fips_code"][-5:] == "99999" and rows[-1]["fips_code"][-5:] == "99999":
                 for row in rows:
                         batch.append((
-                            row['town_name'],
-                            row['county_name'],
-                            row['metro_name'],
                             row['fips_code'][:5],
                             int(row['Efficiency']) if row['Efficiency'] != None else None,
                             int(row['One-Bedroom']) if row['One-Bedroom'] != None else None,
@@ -44,8 +41,6 @@ def fetch_data(last_index):
                             int(row['Three-Bedroom']) if row['Three-Bedroom'] != None else None,
                             int(row['Four-Bedroom']) if row['Four-Bedroom'] != None else None,
                             int(row['FMR Percentile']) if row['FMR Percentile'] != None else None,
-                            row['statename'],
-                            row['statecode'],
                             int(row['smallarea_status']) if row['smallarea_status'] != None else None
                         ))
         else:
@@ -62,9 +57,6 @@ def create_table(conn):
     create_table_sql = f"""
     CREATE TABLE IF NOT EXISTS hud_data (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        town_name TEXT,
-        county_name TEXT,
-        metro_name TEXT,
         fips_code TEXT UNIQUE,
         Efficiency INTEGER,
         One_Bedroom INTEGER,
@@ -72,8 +64,6 @@ def create_table(conn):
         Three_Bedroom INTEGER,
         Four_Bedroom INTEGER,
         FMR_Percentile INTEGER,
-        statename TEXT,
-        statecode TEXT,
         smallarea_status INTEGER
     );
     """
@@ -114,9 +104,6 @@ def insert_data(conn, rows, start_index):
     batch_data = rows[start_index:end_index]
     insert_sql = f"""
     INSERT INTO hud_data (
-        town_name,
-        county_name,
-        metro_name,
         fips_code,
         Efficiency,
         One_Bedroom,
@@ -124,10 +111,8 @@ def insert_data(conn, rows, start_index):
         Three_Bedroom,
         Four_Bedroom,
         FMR_Percentile,
-        statename,
-        statecode,
         smallarea_status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?);
     """
     for row in batch_data:
         conn.execute(insert_sql, row)
