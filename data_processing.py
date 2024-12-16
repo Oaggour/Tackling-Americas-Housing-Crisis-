@@ -2,7 +2,7 @@ import sqlite3
 import pandas as pd
 
 # Database connection
-conn = sqlite3.connect("cdc_data.db")
+conn = sqlite3.connect("housing.db")
 
 # Query to join the tables and calculate the average rental cost
 query = """

@@ -2,7 +2,7 @@ import sqlite3
 import requests
 import unittest
 
-DB_NAME = "cdc_data.db"
+DB_NAME = "housing.db"
 TABLE_NAME = "hud_data"
 
 def fetch_data(last_index):

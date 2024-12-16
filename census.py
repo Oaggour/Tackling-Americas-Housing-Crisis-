@@ -2,7 +2,7 @@ import sqlite3
 import requests
 import unittest
 
-db_name = "housing_crisis.db"
+db_name = "housing.db"
 table_name = 'census_data'
 batch_size = 25
 variables = VARIABLES = "NAME,B01001_001E,B19013_001E,B25003_002E,B25003_003E,B08303_001E"

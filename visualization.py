@@ -8,7 +8,7 @@ data_file = "calculated_data.txt"
 data = pd.read_csv(data_file)
 
 # Database connection
-conn = sqlite3.connect("cdc_data.db")
+conn = sqlite3.connect("housing.db")
 
 # Query the same data for visualization
 query = """

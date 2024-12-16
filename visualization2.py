@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import sqlite3
 
 # Database connection
-conn = sqlite3.connect("cdc_data.db")
+conn = sqlite3.connect("housing.db")
 
 # Query the data
 query = """

@@ -4,7 +4,7 @@ import unittest
 
 # URL of the JSON data
 API_URL = "https://data.cdc.gov/api/views/3nnm-4jni/rows.json?accessType=DOWNLOAD"
-DB_NAME = "cdc_data.db"
+DB_NAME = "housing.db"
 TABLE_NAME = "er_data"
 BATCH_SIZE = 25
 
