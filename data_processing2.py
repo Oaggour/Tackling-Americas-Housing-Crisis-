@@ -9,13 +9,15 @@ SELECT
     h.Two_Bedroom AS average_rent,
     c.median_income,
     c.population,
-    e.covid_19_community_level_id
+    f.covid_19_community_level
 FROM 
     hud_data h
 JOIN 
     census_data c ON h.fips_code = c.fips_code
 JOIN 
     er_data e ON h.fips_code = e.county_fips
+JOIN
+    covid_community_level f ON e.covid_19_community_level_id = f.id
 WHERE 
     h.Two_Bedroom IS NOT NULL AND c.median_income IS NOT NULL AND e.covid_19_community_level_id IS NOT NULL;
 """
@@ -39,7 +41,6 @@ average_rent_by_covid = {
     covid_level: data["total_rent"] / data["count"]
     for covid_level, data in rent_by_covid_level.items()
 }
-
 # Write results to a text file
 output_file = "calculated_data.txt"
 with open(output_file, "w") as f:

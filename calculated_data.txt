@@ -1,4 +1,4 @@
 Average Rental Cost by COVID-19 Community Level:
-1: 1426.31
-2: 1132.50
-3: 1196.00
+Low: 1621.30
+Medium: 1393.49
+High: 1320.65

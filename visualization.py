@@ -53,11 +53,18 @@ plt.show()
 
 # Visualization 2: Scatter Plot of Median Income vs Rental Costs
 plt.figure(figsize=(10, 6))
+data['covid_19_community_level'] = data['covid_19_community_level_id'].map(level_mapping)
+category_order = ["Low", "Medium", "High"]
+data['covid_19_community_level'] = pd.Categorical(
+    data['covid_19_community_level'], 
+    categories=category_order, 
+    ordered=True
+)
 sns.scatterplot(
     data=data,
     x='median_income',
     y='average_rent',
-    hue='covid_19_community_level_id',
+    hue='covid_19_community_level',
     palette='coolwarm'
 )
 plt.title("Median Income vs Average 2 Bedroom Rent")
