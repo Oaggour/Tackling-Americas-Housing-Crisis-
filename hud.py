@@ -62,7 +62,7 @@ def create_table(conn):
     conn.commit()
 
 def get_last_index(conn):
-    cursor = conn.execute("SELECT COUNT(*) FROM combined_data WHERE covid_hospital_admissions_per_100k IS NOT NULL;")
+    cursor = conn.execute("SELECT COUNT(*) FROM combined_data WHERE two_bedroom IS NOT NULL;")
     return cursor.fetchone()[0]
 
     
