@@ -1,6 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-# import seaborn as sns
+import seaborn as sns
 import sqlite3
 
 # Load the data from the processing script
@@ -33,7 +33,15 @@ data = pd.read_sql_query(query, conn)
 conn.close()
 
 # Visualization 1: Bar Chart of Average Rent by COVID-19 Level
-average_rent_by_covid = data.groupby('covid_19_community_level_id')['average_rent'].mean()
+level_mapping = {1: "Low", 2: "Medium", 3: "High"}
+data['covid_19_community_level'] = data['covid_19_community_level_id'].map(level_mapping)
+category_order = ["Low", "Medium", "High"]
+data['covid_19_community_level'] = pd.Categorical(
+    data['covid_19_community_level'], 
+    categories=category_order, 
+    ordered=True
+)
+average_rent_by_covid = data.groupby('covid_19_community_level')['average_rent'].mean()
 average_rent_by_covid.plot(kind='bar', color=['green', 'orange', 'red'], figsize=(10, 6))
 plt.title("Average 2 Bedroom Rental Cost by COVID-19 Community Level")
 plt.xlabel("COVID-19 Community Level")
@@ -44,18 +52,18 @@ plt.savefig("average_rent_bar_chart.png")
 plt.show()
 
 # Visualization 2: Scatter Plot of Median Income vs Rental Costs
-# plt.figure(figsize=(10, 6))
-# sns.scatterplot(
-#     data=data,
-#     x='median_income',
-#     y='average_rent',
-#     hue='covid_19_community_level_id',
-#     palette='coolwarm'
-# )
-# plt.title("Median Income vs Average 2 Bedroom Rent")
-# plt.xlabel("Median Income")
-# plt.ylabel("Average 2 Br Rent")
-# plt.legend(title="COVID-19 Level")
-# plt.tight_layout()
-# plt.savefig("income_vs_rent_scatter.png")
-# plt.show()
+plt.figure(figsize=(10, 6))
+sns.scatterplot(
+    data=data,
+    x='median_income',
+    y='average_rent',
+    hue='covid_19_community_level_id',
+    palette='coolwarm'
+)
+plt.title("Median Income vs Average 2 Bedroom Rent")
+plt.xlabel("Median Income")
+plt.ylabel("Average 2 Br Rent")
+plt.legend(title="COVID-19 Level")
+plt.tight_layout()
+plt.savefig("income_vs_rent_scatter.png")
+plt.show()
