@@ -59,7 +59,7 @@ def create_tables(conn):
         )
     """
     insert_table_2 = """
-        INSERT INTO covid_community_level (
+        INSERT OR IGNORE INTO covid_community_level (
             covid_19_community_level
         )
         VALUES
@@ -104,7 +104,7 @@ def insert_data(conn, rows, start_index):
     end_index = start_index + batch_size
     batch_data = rows[start_index:end_index]
     insert_sql = f"""
-    INSERT INTO {TABLE_NAME} (
+    INSERT OR IGNORE INTO {TABLE_NAME} (
         county_fips,
         covid_hospital_admissions_per_100k,
         covid_19_community_level_id
