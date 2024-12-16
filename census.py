@@ -69,8 +69,8 @@ def process_api_data(year):
         for row in rows:
             fips = row[6] + row[7]
             batch.append((
-                int(row[2]) if row[2] != None else None,
-                fips
+                fips,
+                int(row[2]) if row[2] != None else None
             ))
         
         return batch

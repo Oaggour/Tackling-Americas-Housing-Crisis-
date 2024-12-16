@@ -92,6 +92,7 @@ def insert_data(conn, rows, start_index):
     
     end_index = start_index + batch_size
     batch_data = rows[start_index:end_index]
+    counter = 0
     for row in batch_data:
         conn.execute("""
         INSERT INTO combined_data (fips_code, covid_hospital_admissions_per_100k, covid_19_community_level_id)
@@ -100,6 +101,7 @@ def insert_data(conn, rows, start_index):
             covid_hospital_admissions_per_100k=excluded.covid_hospital_admissions_per_100k,
             covid_19_community_level_id=excluded.covid_19_community_level_id;
         """, row)
+        print(f"Row {counter} successfully inserted.")
 
     conn.commit()
     print(f"Inserted rows {start_index + 1} to {end_index}")
