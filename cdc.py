@@ -6,7 +6,7 @@ import unittest
 API_URL = "https://data.cdc.gov/api/views/3nnm-4jni/rows.json?accessType=DOWNLOAD"
 DB_NAME = "housing.db"
 TABLE_NAME = "er_data"
-BATCH_SIZE = 25
+
 
 def fetch_data():
     """
@@ -97,16 +97,17 @@ def insert_data(conn, rows, start_index):
         rows: List of tuples (county_fips, covid_hospital_admissions_per_100k, covid_19_community_level).
         start_index: The starting index for insertion.
     """
+    batch_size = 25
     if start_index > 99:
-        BATCH_SIZE = 1000
+        batch_size = 1000
     
-    end_index = start_index + BATCH_SIZE
+    end_index = start_index + batch_size
     batch_data = rows[start_index:end_index]
     insert_sql = f"""
     INSERT INTO {TABLE_NAME} (
         county_fips,
         covid_hospital_admissions_per_100k,
-        covid_19_community_level
+        covid_19_community_level_id
     ) VALUES (?,?,?);
     """
     for row in batch_data:
@@ -151,7 +152,7 @@ class Testing(unittest.TestCase):
         cursor = self.conn.execute(query, ('27121',))
         result = cursor.fetchone()
         self.assertEqual(result[2],1.7)
-        self.assertEqual(result[3],'Low')
+        self.assertEqual(result[3],1)
 
         
 
