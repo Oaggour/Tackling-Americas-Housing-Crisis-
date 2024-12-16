@@ -2,6 +2,7 @@ import sqlite3
 import requests
 import unittest
 
+
 db_name = "housing.db"
 table_name = 'census_data'
 
