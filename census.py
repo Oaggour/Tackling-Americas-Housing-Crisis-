@@ -4,8 +4,8 @@ import unittest
 
 db_name = "housing.db"
 table_name = 'census_data'
-batch_size = 25
-variables = VARIABLES = "NAME,B01001_001E,B19013_001E,B25003_002E,B25003_003E,B08303_001E"
+
+variables = "NAME,B01001_001E,B19013_001E,B25003_002E,B25003_003E,B08303_001E"
 # B01001_001E: Total Sex by Age (Population)
 # B19013_001E: MEDIAN HOUSEHOLD INCOME IN THE PAST 12 MONTHS
 # B25003_002E: Owner Occupied
@@ -43,22 +43,23 @@ def get_last_index(conn):
 def insert_data(cur, conn, data, start_index):
     sql = """
         INSERT INTO census_data (
-            county_name,
             population,
             median_income,
             owner_occupied,
             renter_occupied,
             commute_time,
             fips_code
-        ) VALUES (?,?,?,?,?,?,?); 
+        ) VALUES (?,?,?,?,?,?); 
     """
+    batch_size = 25
+
     if start_index > 99:
         batch_size = 377
     
     end_index = start_index + batch_size
     batch_data = data[start_index:end_index]
 
-    counter = 0
+    counter = start_index
     for row in batch_data:
         conn.execute(sql, row)
         print(f'Row {counter} successfully inserted.')
@@ -66,7 +67,7 @@ def insert_data(cur, conn, data, start_index):
     conn.commit()
 
 def process_api_data(year):
-    response = requests.get(api_url(variables, year))
+    response = requests.get(api_url(year, variables))
     if response.status_code == 200:
         data = response.json()
         headers = data[0]
@@ -76,7 +77,6 @@ def process_api_data(year):
         for row in rows:
             fips = row[6] + row[7]
             batch.append((
-                row[0],
                 int(row[1]) if row[1] != None else None,
                 int(row[2]) if row[2] != None else None,
                 int(row[3]) if row[3] != None else None,
@@ -89,3 +89,14 @@ def process_api_data(year):
     else:
         return 'Error.'
 
+def main():
+    conn = sqlite3.connect(db_name)
+    cur = conn.cursor() 
+    create_table(cur, conn)
+
+    last_index = get_last_index(conn)
+    data = process_api_data('2023')
+    insert_data(cur,conn,data,last_index)
+
+if __name__ == "__main__":
+    main()

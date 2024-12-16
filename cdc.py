@@ -49,7 +49,7 @@ def create_tables(conn):
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         county_fips TEXT,
         covid_hospital_admissions_per_100k REAL,
-        covid_19_community_level_id TEXT
+        covid_19_community_level_id INTEGER
     );
     """
     create_table_2 = """
